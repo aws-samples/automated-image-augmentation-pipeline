@@ -1,0 +1,66 @@
+
+## Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+## SPDX-License-Identifier: MIT-0
+
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  image-augmentation-app
+
+Resources:
+  ImageAugmentationFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: image_augmentation_function/
+      Handler: app.lambda_handler
+      Runtime: python3.8
+      Layers:
+        - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p38-numpy:13
+        - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-python38-scipy:1
+        - arn:aws:lambda:us-east-1:770693421928:layer:Klayers-p38-Pillow:10
+      Policies:
+        - AmazonS3FullAccess
+      Timeout: 360
+      MemorySize: 512
+      Environment:
+        Variables:
+          OUTPUT_BUCKET: !Ref OutputBucket
+          NUM_OF_IMAGES_GENERATED: 15
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref ImagesBucket
+            Events: s3:ObjectCreated:* 
+
+        # ImageAugmentation:
+        #   Type: Api 
+        #   Properties:
+        #     Path: /images
+        #     Method: get
+
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+
+  OutputBucket: 
+    Type: AWS::S3::Bucket
+
+    # FunctionLayers:
+    #   Type: AWS::Serverless::LayerVersion
+    #   Properties:
+    #       LayerName: SamFunction-dependencies
+    #       Description: Dependencies for Image Augmentation Lamda
+    #       ContentUri: dependencies/
+    #       CompatibleRuntimes:
+    #         - python3.8
+    #       LicenseInfo: 'MIT'
+    #       RetentionPolicy: Retain
+
+Outputs:
+  ImageAugmentationFunction:
+    Description: "Image Augmentation Lambda Function ARN"
+    Value: !GetAtt ImageAugmentationFunction.Arn
+  ImageAugmentationFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt ImageAugmentationFunctionRole.Arn
+  
